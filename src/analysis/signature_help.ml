@@ -47,14 +47,14 @@ let pp_type env ppf ty =
     Printtyp.type_sch ppf ty)
 
 (* surround function types in parentheses *)
-let pp_parameter_type env ppf ty =
-  match ty with
+let pp_parameter_type env ppf (ty : Types.type_expr) =
+  match Types.Transient_expr.repr ty with
   | { Types.desc = Tarrow _; _ } as ty ->
-    Format.fprintf ppf "(%a)" (pp_type env) ty
-  | ty -> pp_type env ppf ty
+    Format.fprintf ppf "(%a)" (pp_type env) (Types.Transient_expr.type_expr ty)
+  | _ -> pp_type env ppf ty
 
 (* print parameter labels and types *)
-let pp_parameter env label ppf ty =
+let pp_parameter env label ppf (ty : Types.type_expr) =
   match label with
   | Asttypes.Nolabel ->
     pp_parameter_type env ppf ty
@@ -63,7 +63,8 @@ let pp_parameter env label ppf ty =
   | Asttypes.Optional l ->
     (* unwrap option for optional labels the same way as
        [Raw_compat.labels_of_application] *)
-    let unwrap_option ty = match (Ctype.repr ty).Types.desc with
+    let unwrap_option (ty : Types.type_expr) : Types.type_expr =
+      match (Types.Transient_expr.repr ty).desc with
       | Types.Tconstr (path, [ty], _)
         when Path.same path Predef.path_option -> ty
       | _ -> ty
@@ -83,8 +84,8 @@ let separate_function_signature ~args (e : Typedtree.expression) =
   Type_utils.Printtyp.reset ();
   let buffer = Buffer.create 16 in
   let ppf = Format.formatter_of_buffer buffer in
-  let rec separate ?(i=0) ?(parameters=[]) args ty =
-    match (args, ty) with
+  let rec separate ?(i=0) ?(parameters=[]) args (ty : Types.type_expr) =
+    match (args, Types.Transient_expr.repr ty) with
     | (l, arg)::args, { Types.desc = Tarrow (label, ty1, ty2, _) } ->
       let parameter = print_parameter_offset ppf buffer e.exp_env label ty1 ?arg in
       separate args ty2 ~i:(succ i) ~parameters:(parameter::parameters)
@@ -136,23 +137,38 @@ let active_parameter_by_prefix ~prefix params =
   in
   find_by_prefix params
 
-let application_signature ~prefix = function
+let application_signature ~prefix (browse : Mbrowse.t) =
   (* provide signature information for applied functions *)
-  | (_, Expression arg) :: (_, Expression { exp_desc =
-      Texp_apply ({ exp_type = { desc = Tarrow _; _ }; _ } as e, args); _}) :: _ ->
-    let result = separate_function_signature e ~args in
-    let active_param = active_parameter_by_arg ~arg result.parameters in
-    let active_param = match active_param with
-      | Some _ as ap -> ap
-      | None -> active_parameter_by_prefix ~prefix result.parameters
-    in
-    Some { result with active_param }
-
+  let try_applied = function
+    | (_, Expression arg) ::
+        (_, Expression {
+          exp_desc = Texp_apply ( { exp_type ; _ } as e, args); _}) :: _ ->
+      begin match Types.Transient_expr.repr exp_type with
+      | { Types.desc = Tarrow _; _ } ->
+        let result = separate_function_signature e ~args in
+        let active_param = active_parameter_by_arg ~arg result.parameters in
+        let active_param = match active_param with
+          | Some _ as ap -> ap
+          | None -> active_parameter_by_prefix ~prefix result.parameters
+        in
+        Some { result with active_param }
+      | _ -> None
+      end
+    | _ -> None
+  in
   (* provide signature information directly after an unapplied function-type
      value *)
-  | (_, Expression ({ exp_type = { desc = Tarrow _; _ }; _ } as e)) :: _ ->
-    let result = separate_function_signature e ~args:[] in
-    let active_param = active_parameter_by_prefix ~prefix result.parameters in
-    Some { result with active_param }
-
-  | _ -> None
+  let try_unapplied = function
+    | (_, Expression ({ exp_type ; _ } as e)) :: _ ->
+      begin match Types.Transient_expr.repr exp_type with
+      | { Types.desc = Tarrow _; _ } ->
+        let result = separate_function_signature e ~args:[] in
+        let active_param = active_parameter_by_prefix ~prefix result.parameters in
+        Some { result with active_param }
+      | _ -> None
+      end
+    | _ -> None
+  in
+  match try_applied browse with
+  | Some _ as s -> s
+  | None -> try_unapplied browse
