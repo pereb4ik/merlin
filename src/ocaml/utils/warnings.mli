@@ -108,6 +108,7 @@ type t =
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
   | Reasonism                               (* 71 *)
+  | Reason_switch of loc list               (* 72 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}

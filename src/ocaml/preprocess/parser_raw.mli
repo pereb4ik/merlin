@@ -17,6 +17,7 @@ type token =
   | TO
   | TILDE
   | THEN
+  | SWITCH
   | STRUCT
   | STRING of (string * Location.t * string option)
   | STAR
@@ -194,6 +195,7 @@ module MenhirInterpreter : sig
     | T_TO : unit terminal
     | T_TILDE : unit terminal
     | T_THEN : unit terminal
+    | T_SWITCH : unit terminal
     | T_STRUCT : unit terminal
     | T_STRING : (string * Location.t * string option) terminal
     | T_STAR : unit terminal

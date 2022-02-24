@@ -94,6 +94,7 @@ let rec erroneous_expr_check e =
   | _ -> false
 
 exception Warning of Location.t * string
+exception Warning72 of Location.t * Warnings.t
 
 let prerr_warning loc w =
   match !errors with
@@ -103,7 +104,9 @@ let prerr_warning loc w =
     Location.print_warning loc ppf w;
     match to_string () with
       | "" -> ()
-      | s ->  l := Warning (loc,s) :: !l
+      | s -> 
+        let warn = match w with | Warnings.Reason_switch _ -> Warning72 (loc, w) | _ -> Warning (loc,s) 
+      in l := warn :: !l
 
 let prerr_alert loc w =
   match !errors with
@@ -115,8 +118,14 @@ let prerr_alert loc w =
       | "" -> ()
       | s ->  l := Warning (loc,s) :: !l
 
+(* Exclusive registration for Warning 72 *)
 let () = Location.register_error_of_exn (function
     | Warning (loc, str) -> Some (Location.error ~loc ~source:Location.Warning str)
+    | Warning72 (loc, war) ->
+      let report = Option.get (Location.report_warning loc war) in 
+      let ppf, to_string = Format.to_string () in
+      Location.print_report ppf Location.{report with sub = []} ;
+      Some (Location.error ~loc ~source:Location.Warning (to_string ()) ~sub:report.sub)
     | _ -> None
   )
 

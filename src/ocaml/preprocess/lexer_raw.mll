@@ -107,6 +107,7 @@ let keyword_table : keywords =
     "lazy", LAZY;
     "let", LET;
     "match", MATCH;
+    "switch", SWITCH;
     "method", METHOD;
     "module", MODULE;
     "mutable", MUTABLE;

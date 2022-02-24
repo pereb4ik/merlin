@@ -34,6 +34,7 @@ let print_symbol = function
   | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_TO) -> "to"
   | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_TILDE) -> "~"
   | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_THEN) -> "then"
+  | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_SWITCH) -> "switch"
   | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_STRUCT) -> "struct"
   | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_STRING) -> "STRING"
   | MenhirInterpreter.X (MenhirInterpreter.T MenhirInterpreter.T_STAR) -> "*"
@@ -379,6 +380,7 @@ let print_value (type a) : a MenhirInterpreter.symbol -> a -> string = function
   | MenhirInterpreter.T MenhirInterpreter.T_TO -> (fun _ -> "to")
   | MenhirInterpreter.T MenhirInterpreter.T_TILDE -> (fun _ -> "~")
   | MenhirInterpreter.T MenhirInterpreter.T_THEN -> (fun _ -> "then")
+  | MenhirInterpreter.T MenhirInterpreter.T_SWITCH -> (fun _ -> "switch")
   | MenhirInterpreter.T MenhirInterpreter.T_STRUCT -> (fun _ -> "struct")
   | MenhirInterpreter.T MenhirInterpreter.T_STRING -> (string_of_STRING)
   | MenhirInterpreter.T MenhirInterpreter.T_STAR -> (fun _ -> "*")
@@ -723,6 +725,7 @@ let print_token = function
   | TO -> print_value (MenhirInterpreter.T MenhirInterpreter.T_TO) ()
   | TILDE -> print_value (MenhirInterpreter.T MenhirInterpreter.T_TILDE) ()
   | THEN -> print_value (MenhirInterpreter.T MenhirInterpreter.T_THEN) ()
+  | SWITCH -> print_value (MenhirInterpreter.T MenhirInterpreter.T_SWITCH) ()
   | STRUCT -> print_value (MenhirInterpreter.T MenhirInterpreter.T_STRUCT) ()
   | STRING v -> print_value (MenhirInterpreter.T MenhirInterpreter.T_STRING) v
   | STAR -> print_value (MenhirInterpreter.T MenhirInterpreter.T_STAR) ()
@@ -860,6 +863,7 @@ let token_of_terminal (type a) (t : a MenhirInterpreter.terminal) (v : a) : toke
   | MenhirInterpreter.T_TO -> TO
   | MenhirInterpreter.T_TILDE -> TILDE
   | MenhirInterpreter.T_THEN -> THEN
+  | MenhirInterpreter.T_SWITCH -> SWITCH
   | MenhirInterpreter.T_STRUCT -> STRUCT
   | MenhirInterpreter.T_STRING -> STRING v
   | MenhirInterpreter.T_STAR -> STAR

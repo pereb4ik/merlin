@@ -788,6 +788,7 @@ let expr_of_lwt_bindings ~loc lbs body =
 %token LBRACKETATAT [@symbol "[@@"]
 %token LBRACKETATATAT [@symbol "[@@@"]
 %token MATCH [@symbol "match"]
+%token SWITCH [@symbol "switch"]
 %token METHOD [@symbol "method"]
 %token MINUS [@symbol "-"]
 %token MINUSDOT [@symbol "-."]
@@ -2426,6 +2427,13 @@ let_pattern [@recovery default_pattern ()]:
       { (mk_newtypes ~loc:$sloc $5 $7).pexp_desc, $2 }
   | MATCH ext_attributes seq_expr WITH match_cases
       { Pexp_match($3, $5), $2 }
+  | SWITCH ext_attributes simple_expr LBRACE match_cases RBRACE
+      { let list = [Warnings.{ loc_start = $startpos($1); loc_end = $endpos($1); loc_ghost = false };
+                    Warnings.{ loc_start = $startpos($4); loc_end = $endpos($4); loc_ghost = false };
+                    Warnings.{ loc_start = $startpos($6); loc_end = $endpos($6); loc_ghost = false }] in
+        let loc = Warnings.{ loc_start = $startpos; loc_end = $endpos; loc_ghost = false } in
+          let () = throw_warn loc (Warnings.Reason_switch list) in
+          Pexp_match($3, $5), $2 }
   | TRY ext_attributes seq_expr WITH match_cases
       { Pexp_try($3, $5), $2 }
   (*
@@ -3953,6 +3961,7 @@ single_attr_id:
   | LAZY { "lazy" }
   | LET { "let" }
   | MATCH { "match" }
+  | SWITCH { "switch" }
   | METHOD { "method" }
   | MODULE { "module" }
   | MUTABLE { "mutable" }

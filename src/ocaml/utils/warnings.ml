@@ -106,6 +106,7 @@ type t =
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
   | Reasonism                               (* 71 *)
+  | Reason_switch of loc list               (* 72 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -187,9 +188,10 @@ let number = function
   | Unused_field _ -> 69
   | Missing_mli -> 70
   | Reasonism -> 71
+  | Reason_switch _ -> 72
 ;;
 
-let last_warning_number = 71
+let last_warning_number = 72
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -354,6 +356,8 @@ let descriptions =
     ["missing-mli"];
     71, "Reasonism",
     ["reasonism"];
+    72, "Reason switch used instead of match with",
+    ["reason-switch"];
   ]
 ;;
 
@@ -945,6 +949,7 @@ let message = function
   | Missing_mli ->
     "Cannot find interface file."
   | Reasonism -> "You shoud use 'struct end' instead"
+  | Reason_switch _ -> "You shoud use 'match with' instead"
 ;;
 
 let nerrors = ref 0;;
@@ -972,11 +977,16 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
+     let sub_locs =
+        match w with
+        | Reason_switch l -> List.combine l ["switch"; "{"; "}"]
+        | _ -> []
+      in
      `Active
        { id = id_name w;
          message = message w;
          is_error = is_error w;
-         sub_locs = [];
+         sub_locs;
        }
 
 let report_alert (alert : alert) =
