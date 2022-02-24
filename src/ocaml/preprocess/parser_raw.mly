@@ -240,6 +240,8 @@ let mkpat_opt_constraint ~loc p = function
    also lead a completion system to propose completions which in fact are
    incorrect. In order to avoid these problems, the productions that use
    [not_expecting] should be marked with AVOID. *)
+let throw_warn loc warn =
+    if Warnings.is_active warn then Location.prerr_warning loc warn
 
 let not_expecting loc nonterm =
   raise_error Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
@@ -1385,6 +1387,10 @@ module_expr [@recovery default_module_expr ()]:
   | STRUCT attributes structure error
       { unclosed "struct" $loc($1) "end" $loc($4) }
   *)
+  | LBRACE attrs = attributes s = structure RBRACE
+      { let loc = Warnings.{ loc_start = $startpos; loc_end = $endpos; loc_ghost = false } in
+          let () = throw_warn loc Warnings.Reasonism in
+          mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
   | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
       { wrap_mod_attrs ~loc:$sloc attrs (
           List.fold_left (fun acc (startpos, arg) ->
