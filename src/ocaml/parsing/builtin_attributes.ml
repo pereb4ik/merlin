@@ -67,6 +67,13 @@ let error_of_extension ext =
   | ({txt; loc}, _) ->
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
+let error_of_extension ext =
+  match Extend_helper.classify_extension ext with
+  | `Other -> error_of_extension ext
+  | `Syntax_error ->
+    let txt, loc = Extend_helper.extract_syntax_error ext in
+    Location.error ~source:Location.Parser ~loc txt
+
 let kind_and_message = function
   | PStr[
       {pstr_desc=
