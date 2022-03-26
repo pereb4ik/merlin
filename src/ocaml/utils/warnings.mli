@@ -109,6 +109,7 @@ type t =
   | Missing_mli                             (* 70 *)
   | Reasonism                               (* 71 *)
   | Reason_switch of loc list               (* 72 *)
+  | Reason_record of loc list               (* 73 *)
 ;;
 
 type alert = {kind:string; message:string; def:loc; use:loc}

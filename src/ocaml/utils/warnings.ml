@@ -107,6 +107,7 @@ type t =
   | Missing_mli                             (* 70 *)
   | Reasonism                               (* 71 *)
   | Reason_switch of loc list               (* 72 *)
+  | Reason_record of loc list               (* 73 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -189,9 +190,10 @@ let number = function
   | Missing_mli -> 70
   | Reasonism -> 71
   | Reason_switch _ -> 72
+  | Reason_record _ -> 73
 ;;
 
-let last_warning_number = 72
+let last_warning_number = 73
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -358,6 +360,8 @@ let descriptions =
     ["reasonism"];
     72, "Reason switch used instead of match with",
     ["reason-switch"];
+    73, "Comma used instead of semi",
+    ["reason-record"];
   ]
 ;;
 
@@ -950,6 +954,7 @@ let message = function
     "Cannot find interface file."
   | Reasonism -> "You shoud use 'struct end' instead"
   | Reason_switch _ -> "You shoud use 'match with' instead"
+  | Reason_record _ -> "You shoud use ';' instead ','"
 ;;
 
 let nerrors = ref 0;;
@@ -980,6 +985,7 @@ let report w =
      let sub_locs =
         match w with
         | Reason_switch l -> List.combine l ["switch"; "{"; "}"]
+        | Reason_record l -> List.map (fun loc -> (loc, ",")) l
         | _ -> []
       in
      `Active

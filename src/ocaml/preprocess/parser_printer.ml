@@ -308,6 +308,7 @@ let print_symbol = function
   | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_labeled_simple_expr) -> "labeled_simple_expr"
   | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_label_longident) -> "label_longident"
   | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_label_let_pattern) -> "label_let_pattern"
+  | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_label_declarations_no_throw) -> "label_declarations_no_throw"
   | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_label_declarations) -> "label_declarations"
   | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_label_declaration_semi) -> "label_declaration_semi"
   | MenhirInterpreter.X (MenhirInterpreter.N MenhirInterpreter.N_label_declaration) -> "label_declaration"
@@ -654,6 +655,7 @@ let print_value (type a) : a MenhirInterpreter.symbol -> a -> string = function
   | MenhirInterpreter.N MenhirInterpreter.N_labeled_simple_expr -> (fun _ -> "labeled_simple_expr")
   | MenhirInterpreter.N MenhirInterpreter.N_label_longident -> (fun _ -> "label_longident")
   | MenhirInterpreter.N MenhirInterpreter.N_label_let_pattern -> (fun _ -> "label_let_pattern")
+  | MenhirInterpreter.N MenhirInterpreter.N_label_declarations_no_throw -> (fun _ -> "label_declarations_no_throw")
   | MenhirInterpreter.N MenhirInterpreter.N_label_declarations -> (fun _ -> "label_declarations")
   | MenhirInterpreter.N MenhirInterpreter.N_label_declaration_semi -> (fun _ -> "label_declaration_semi")
   | MenhirInterpreter.N MenhirInterpreter.N_label_declaration -> (fun _ -> "label_declaration")

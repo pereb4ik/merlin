@@ -697,7 +697,7 @@ let dispatch pipeline (type a) : a Query_protocol.t -> a =
     (* Track first parsing error *)
     let filter_parser_error = function
       | Msupport.Warning _ as exn -> filter_error exn
-      | Msupport.Warning72 _ as exn -> filter_error exn
+      | Msupport.WarningRaw _ as exn -> filter_error exn
       | exn ->
         let result = filter_error exn in
         begin match result with

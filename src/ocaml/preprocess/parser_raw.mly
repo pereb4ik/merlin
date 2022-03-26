@@ -3310,9 +3310,27 @@ constructor_arguments:
       { Pcstr_record $2 }
 ;
 label_declarations:
-    label_declaration                           { [$1] }
-  | label_declaration_semi                      { [$1] }
-  | label_declaration_semi label_declarations   { $1 :: $2 }
+  label_declarations_no_throw
+  {
+    let (l, ld) = $1 in
+    let () =
+    match l with
+    | [] -> ()
+    | list -> (let loc = make_loc $loc in
+                throw_warn loc (Warnings.Reason_record list))
+    in
+    ld
+  }
+;
+label_declarations_no_throw:
+    label_declaration                           { ([],[$1]) }
+  | label_declaration_semi                      { $1 }
+  | label_declaration_semi label_declarations_no_throw
+  { 
+    let (l1, ld1) = $1 in
+    let (l2, ld2) = $2 in
+    (l1 @ l2, ld1 @ ld2)
+  }
 ;
 label_declaration:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes
@@ -3320,13 +3338,21 @@ label_declaration:
         Type.field $2 $4 ~mut:$1 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
 ;
 label_declaration_semi:
-    mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
+  | mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
       { let info =
           match rhs_info $endpos($5) with
           | Some _ as info_before_semi -> info_before_semi
           | None -> symbol_info $endpos
        in
-       Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info }
+       ([], [Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info]) }
+  | mutable_flag mkrhs(label) COLON poly_type_no_attr attributes COMMA attributes
+      { let info =
+          match rhs_info $endpos($5) with
+          | Some _ as info_before_semi -> info_before_semi
+          | None -> symbol_info $endpos
+       in 
+       let loc = make_loc $loc($6) in
+       ([loc], [Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info]) }
 ;
 
 /* Type Extensions */
