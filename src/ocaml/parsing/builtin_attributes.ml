@@ -30,6 +30,16 @@ let string_of_opt_payload p =
   | Some s -> s
   | None -> ""
 
+let rec string_loc_of_structure = 
+  let from_item = function
+    | {pstr_desc=Pstr_eval({pexp_desc=Pexp_constant 
+      Pconst_string(s, loc, _)},_)} -> (loc, s)
+    | _ -> (Location.none, "")
+  in
+  function
+    | [] -> []
+    | h :: t -> (from_item h) :: (string_loc_of_structure t)
+
 let error_of_extension ext =
   let submessage_from main_loc main_txt = function
     | {pstr_desc=Pstr_extension
@@ -210,12 +220,31 @@ let warning_attribute ?(ppwarning = true) =
         | Some _ -> ()
         | None -> warn_payload loc txt "Invalid payload"
   in
+  let reason_warning loc payload = 
+    match payload with
+    (* If tail = [] then sub = [] *)
+    | PStr (h :: t) -> (
+        let subs = string_loc_of_structure t in
+        let msg = string_of_opt_payload (PStr [h]) in
+        let msg_of_str str = fun ppf -> Format.pp_print_string ppf str in
+        let sub = List.map (fun (loc, sub_message) ->
+          { loc; txt = msg_of_str sub_message }) subs in
+        let report = Location.error ~loc ~sub ~source:Warning msg in 
+        Msupport_parsing.raise_error (Location.Error report))
+    | _ ->
+        warn_payload loc "reason.warning" "A single string literal is expected"
+  in
   function
   | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
      attr_loc;
      attr_payload;
      } ->
       process attr_loc txt false attr_payload
+  | {attr_name = {txt = ("reason.warning"); _};
+     attr_loc;
+     attr_payload;
+     } ->
+      reason_warning attr_loc attr_payload
   | {attr_name = {txt = ("ocaml.warnerror"|"warnerror") as txt; _};
      attr_loc;
      attr_payload
