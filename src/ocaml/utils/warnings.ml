@@ -105,7 +105,7 @@ type t =
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
-  | Reasonism                               (* 71 *)
+  | Reason_module                           (* 71 *)
   | Reason_switch of loc list               (* 72 *)
   | Reason_record of loc list               (* 73 *)
 ;;
@@ -188,7 +188,7 @@ let number = function
   | Match_on_mutable_state_prevent_uncurry -> 68
   | Unused_field _ -> 69
   | Missing_mli -> 70
-  | Reasonism -> 71
+  | Reason_module -> 71
   | Reason_switch _ -> 72
   | Reason_record _ -> 73
 ;;
@@ -356,8 +356,8 @@ let descriptions =
     ["unused-field"];
     70, "Missing interface file.",
     ["missing-mli"];
-    71, "Reasonism",
-    ["reasonism"];
+    71, "Brackets used instead of 'struct end'",
+    ["reason-module"];
     72, "Reason switch used instead of match with",
     ["reason-switch"];
     73, "Comma used instead of semi",
@@ -952,9 +952,9 @@ let message = function
       " is never mutated."
   | Missing_mli ->
     "Cannot find interface file."
-  | Reasonism -> "You shoud use 'struct end' instead"
-  | Reason_switch _ -> "You shoud use 'match with' instead"
-  | Reason_record _ -> "You shoud use ';' instead ','"
+  | Reason_module -> "Reason's brackets\nYou shoud use 'struct end' instead"
+  | Reason_switch _ -> "Reason-style pattern matching\nYou shoud use 'match with' instead"
+  | Reason_record _ -> "Reason-style record definition\nYou shoud use ';' instead ','"
 ;;
 
 let nerrors = ref 0;;
@@ -984,8 +984,8 @@ let report w =
      if is_error w then incr nerrors;
      let sub_locs =
         match w with
-        | Reason_switch l -> List.combine l ["switch"; "{"; "}"]
-        | Reason_record l -> List.map (fun loc -> (loc, ",")) l
+        | Reason_switch l -> List.combine l ["invalid 'switch'"; "invalid '{'"; "invalid '}'"]
+        | Reason_record l -> List.map (fun loc -> (loc, "invalid ','")) l
         | _ -> []
       in
      `Active

@@ -124,8 +124,8 @@ let prerr_alert loc w =
 (* Exclusive registration for Warning 72 (and 73) *)
 let () = Location.register_error_of_exn (function
     | Warning (loc, str) -> Some (Location.error ~loc ~source:Location.Warning str)
-    | WarningRaw (loc, war) ->
-      let report = Option.get (Location.report_warning loc war) in 
+    | WarningRaw (loc, warn) ->
+      let report = Option.get (Location.report_warning loc warn) in
       let ppf, to_string = Format.to_string () in
       Location.print_report ppf Location.{report with sub = []} ;
       Some (Location.error ~loc ~sub:report.sub ~source:Location.Warning (to_string ()))

@@ -1389,9 +1389,9 @@ module_expr [@recovery default_module_expr ()]:
       { unclosed "struct" $loc($1) "end" $loc($4) }
   *)
   | LBRACE attrs = attributes s = structure RBRACE
-      { let loc = Warnings.{ loc_start = $startpos; loc_end = $endpos; loc_ghost = false } in
-          let () = throw_warn loc Warnings.Reasonism in
-          mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
+      { let loc = make_loc $loc in
+        throw_warn loc Warnings.Reason_module;
+        mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
   | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
       { wrap_mod_attrs ~loc:$sloc attrs (
           List.fold_left (fun acc (startpos, arg) ->
@@ -2428,12 +2428,12 @@ let_pattern [@recovery default_pattern ()]:
   | MATCH ext_attributes seq_expr WITH match_cases
       { Pexp_match($3, $5), $2 }
   | SWITCH ext_attributes simple_expr LBRACE match_cases RBRACE
-      { let list = [Warnings.{ loc_start = $startpos($1); loc_end = $endpos($1); loc_ghost = false };
-                    Warnings.{ loc_start = $startpos($4); loc_end = $endpos($4); loc_ghost = false };
-                    Warnings.{ loc_start = $startpos($6); loc_end = $endpos($6); loc_ghost = false }] in
-        let loc = Warnings.{ loc_start = $startpos; loc_end = $endpos; loc_ghost = false } in
-          let () = throw_warn loc (Warnings.Reason_switch list) in
-          Pexp_match($3, $5), $2 }
+      { let list = [ make_loc $loc($1) ;
+                     make_loc $loc($4) ;
+                     make_loc $loc($6)] in
+        let loc = make_loc $loc in
+        throw_warn loc (Warnings.Reason_switch list);
+        Pexp_match($3, $5), $2 }
   | TRY ext_attributes seq_expr WITH match_cases
       { Pexp_try($3, $5), $2 }
   (*

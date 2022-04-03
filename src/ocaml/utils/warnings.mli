@@ -107,7 +107,7 @@ type t =
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
-  | Reasonism                               (* 71 *)
+  | Reason_module                           (* 71 *)
   | Reason_switch of loc list               (* 72 *)
   | Reason_record of loc list               (* 73 *)
 ;;
