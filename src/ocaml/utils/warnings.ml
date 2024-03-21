@@ -105,6 +105,9 @@ type t =
   | Match_on_mutable_state_prevent_uncurry  (* 68 *)
   | Unused_field of string * field_usage_warning (* 69 *)
   | Missing_mli                             (* 70 *)
+  | Reason_module                           (* 71 *)
+  | Reason_switch of loc list               (* 72 *)
+  | Reason_record of loc list               (* 73 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -185,9 +188,12 @@ let number = function
   | Match_on_mutable_state_prevent_uncurry -> 68
   | Unused_field _ -> 69
   | Missing_mli -> 70
+  | Reason_module -> 71
+  | Reason_switch _ -> 72
+  | Reason_record _ -> 73
 ;;
 
-let last_warning_number = 70
+let last_warning_number = 73
 ;;
 
 (* Third component of each tuple is the list of names for each warning. The
@@ -349,7 +355,13 @@ let descriptions =
     69, "Unused record field.",
     ["unused-field"];
     70, "Missing interface file.",
-    ["missing-mli"]
+    ["missing-mli"];
+    71, "Brackets used instead of 'struct end'",
+    ["reason-module"];
+    72, "Reason switch used instead of match with",
+    ["reason-switch"];
+    73, "Comma used instead of semi",
+    ["reason-record"];
   ]
 ;;
 
@@ -940,6 +952,9 @@ let message = function
       " is never mutated."
   | Missing_mli ->
     "Cannot find interface file."
+  | Reason_module -> "Reason's brackets\nYou shoud use 'struct end' instead"
+  | Reason_switch _ -> "Reason-style pattern matching\nYou shoud use 'match with' instead"
+  | Reason_record _ -> "Reason-style record definition\nYou shoud use ';' instead ','"
 ;;
 
 let nerrors = ref 0;;
@@ -967,11 +982,17 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
+     let sub_locs =
+        match w with
+        | Reason_switch l -> List.combine l ["invalid 'switch'"; "invalid '{'"; "invalid '}'"]
+        | Reason_record l -> List.map (fun loc -> (loc, "invalid ','")) l
+        | _ -> []
+      in
      `Active
        { id = id_name w;
          message = message w;
          is_error = is_error w;
-         sub_locs = [];
+         sub_locs;
        }
 
 let report_alert (alert : alert) =

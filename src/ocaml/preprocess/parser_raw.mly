@@ -240,6 +240,8 @@ let mkpat_opt_constraint ~loc p = function
    also lead a completion system to propose completions which in fact are
    incorrect. In order to avoid these problems, the productions that use
    [not_expecting] should be marked with AVOID. *)
+let throw_warn loc warn =
+    if Warnings.is_active warn then Location.prerr_warning loc warn
 
 let not_expecting loc nonterm =
   raise_error Syntaxerr.(Error(Not_expecting(make_loc loc, nonterm)))
@@ -786,6 +788,7 @@ let expr_of_lwt_bindings ~loc lbs body =
 %token LBRACKETATAT [@symbol "[@@"]
 %token LBRACKETATATAT [@symbol "[@@@"]
 %token MATCH [@symbol "match"]
+%token SWITCH [@symbol "switch"]
 %token METHOD [@symbol "method"]
 %token MINUS [@symbol "-"]
 %token MINUSDOT [@symbol "-."]
@@ -1385,6 +1388,10 @@ module_expr [@recovery default_module_expr ()]:
   | STRUCT attributes structure error
       { unclosed "struct" $loc($1) "end" $loc($4) }
   *)
+  | LBRACE attrs = attributes s = structure RBRACE
+      { let loc = make_loc $loc in
+        throw_warn loc Warnings.Reason_module;
+        mkmod ~loc:$sloc ~attrs (Pmod_structure s) }
   | FUNCTOR attrs = attributes args = functor_args MINUSGREATER me = module_expr
       { wrap_mod_attrs ~loc:$sloc attrs (
           List.fold_left (fun acc (startpos, arg) ->
@@ -2420,6 +2427,13 @@ let_pattern [@recovery default_pattern ()]:
       { (mk_newtypes ~loc:$sloc $5 $7).pexp_desc, $2 }
   | MATCH ext_attributes seq_expr WITH match_cases
       { Pexp_match($3, $5), $2 }
+  | SWITCH ext_attributes simple_expr LBRACE match_cases RBRACE
+      { let list = [ make_loc $loc($1) ;
+                     make_loc $loc($4) ;
+                     make_loc $loc($6)] in
+        let loc = make_loc $loc in
+        throw_warn loc (Warnings.Reason_switch list);
+        Pexp_match($3, $5), $2 }
   | TRY ext_attributes seq_expr WITH match_cases
       { Pexp_try($3, $5), $2 }
   (*
@@ -3296,9 +3310,27 @@ constructor_arguments:
       { Pcstr_record $2 }
 ;
 label_declarations:
-    label_declaration                           { [$1] }
-  | label_declaration_semi                      { [$1] }
-  | label_declaration_semi label_declarations   { $1 :: $2 }
+  label_declarations_no_throw
+  {
+    let (l, ld) = $1 in
+    let () =
+    match l with
+    | [] -> ()
+    | list -> (let loc = make_loc $loc in
+                throw_warn loc (Warnings.Reason_record list))
+    in
+    ld
+  }
+;
+label_declarations_no_throw:
+    label_declaration                           { ([],[$1]) }
+  | label_declaration_semi                      { $1 }
+  | label_declaration_semi label_declarations_no_throw
+  { 
+    let (l1, ld1) = $1 in
+    let (l2, ld2) = $2 in
+    (l1 @ l2, ld1 @ ld2)
+  }
 ;
 label_declaration:
     mutable_flag mkrhs(label) COLON poly_type_no_attr attributes
@@ -3306,13 +3338,21 @@ label_declaration:
         Type.field $2 $4 ~mut:$1 ~attrs:$5 ~loc:(make_loc $sloc) ~info }
 ;
 label_declaration_semi:
-    mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
+  | mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
       { let info =
           match rhs_info $endpos($5) with
           | Some _ as info_before_semi -> info_before_semi
           | None -> symbol_info $endpos
        in
-       Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info }
+       ([], [Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info]) }
+  | mutable_flag mkrhs(label) COLON poly_type_no_attr attributes COMMA attributes
+      { let info =
+          match rhs_info $endpos($5) with
+          | Some _ as info_before_semi -> info_before_semi
+          | None -> symbol_info $endpos
+       in 
+       let loc = make_loc $loc($6) in
+       ([loc], [Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7) ~loc:(make_loc $sloc) ~info]) }
 ;
 
 /* Type Extensions */
@@ -3947,6 +3987,7 @@ single_attr_id:
   | LAZY { "lazy" }
   | LET { "let" }
   | MATCH { "match" }
+  | SWITCH { "switch" }
   | METHOD { "method" }
   | MODULE { "module" }
   | MUTABLE { "mutable" }

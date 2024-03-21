@@ -17,6 +17,7 @@ type token =
   | TO
   | TILDE
   | THEN
+  | SWITCH
   | STRUCT
   | STRING of (string * Location.t * string option)
   | STAR
@@ -194,6 +195,7 @@ module MenhirInterpreter : sig
     | T_TO : unit terminal
     | T_TILDE : unit terminal
     | T_THEN : unit terminal
+    | T_SWITCH : unit terminal
     | T_STRUCT : unit terminal
     | T_STRING : (string * Location.t * string option) terminal
     | T_STAR : unit terminal
@@ -474,8 +476,9 @@ module MenhirInterpreter : sig
     | N_labeled_simple_expr : (Asttypes.arg_label * Parsetree.expression) nonterminal
     | N_label_longident : (Longident.t) nonterminal
     | N_label_let_pattern : (string * Parsetree.pattern) nonterminal
+    | N_label_declarations_no_throw : (Location.t list * Parsetree.label_declaration list) nonterminal
     | N_label_declarations : (Parsetree.label_declaration list) nonterminal
-    | N_label_declaration_semi : (Parsetree.label_declaration) nonterminal
+    | N_label_declaration_semi : (Location.t list * Parsetree.label_declaration list) nonterminal
     | N_label_declaration : (Parsetree.label_declaration) nonterminal
     | N_item_extension : (Parsetree.extension) nonterminal
     | N_interface : (Parsetree.signature) nonterminal
